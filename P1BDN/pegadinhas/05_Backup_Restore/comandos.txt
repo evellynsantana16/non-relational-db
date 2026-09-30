@@ -1,0 +1,7 @@
+mongodump --db Receita --out ./backup
+mongodump --db Receita --out ./backup --gzip
+mongodump --db Receita --archive=receita.archive --gzip
+
+mongorestore --db Receita ./backup/Receita
+mongorestore --drop --db Receita ./backup/Receita
+

@@ -1,0 +1,15 @@
+IMPORT
+mongoimport --db Receita --collection socios --type=csv --headerline --numInsertionWorkers=2 --file socios_sem_aspas
+
+EXPORT
+mongoexport --db Receita --collection socios --type=json --out socios.json
+
+EXPORT FILTRADO
+mongoexport --db Receita --collection socios --type=json --out socios_curitiba.json --query='{"cidade":"Curitiba"}'
+
+LEMBRE:
+import = --file
+export = --out
+cabeçalho = --headerline
+filtro = --query
+2 workers = --numInsertionWorkers=2

@@ -1,0 +1,502 @@
+// ============================================================
+// MONGODB — EXERCÍCIOS COMPLETOS, NÍVEL DE PROVA
+// ============================================================
+// Use Ctrl+F e procure palavras do enunciado.
+// ============================================================
+
+// ============================================================
+// 1) FIND — GTE + OR
+// ============================================================
+// ENUNCIADO:
+// Uma empresa de logística possui remessas. Retorne documentos
+// em que peso_kg >= 50 E (destino = SP OU status = Pendente).
+
+// COMO PENSAR:
+// maior ou igual -> $gte
+// OU -> $or
+// A condição fora do $or funciona como E.
+
+db.remessas.find({
+    peso_kg: { $gte: 50 },
+    $or: [
+        { destino: "SP" },
+        { status: "Pendente" }
+    ]
+});
+
+
+// ============================================================
+// 2) FIND — INTERVALO
+// ============================================================
+// ENUNCIADO:
+// Retorne produtos com preço entre 100 e 500, incluindo extremos.
+
+db.produtos.find({
+    preco: {
+        $gte: 100,
+        $lte: 500
+    }
+});
+
+
+// ============================================================
+// 3) FIND — EXISTS + NE
+// ============================================================
+// ENUNCIADO:
+// Retorne clientes que possuem telefone e cujo status seja
+// diferente de "Bloqueado".
+
+db.clientes.find({
+    telefone: { $exists: true },
+    status: { $ne: "Bloqueado" }
+});
+
+
+// ============================================================
+// 4) UPDATEONE — TIRAR 5
+// ============================================================
+// ENUNCIADO:
+// Retire 5 unidades do estoque do produto _id 10.
+// "tirar/diminuir" -> $inc negativo.
+
+db.produtos.updateOne(
+    { _id: 10 },
+    {
+        $inc: {
+            estoque: -5
+        }
+    }
+);
+
+
+// ============================================================
+// 5) UPDATE MANY — $MUL + $SET
+// ============================================================
+// ENUNCIADO:
+// Localize contas com status Ativa. Multiplique saldo por 1.05
+// e defina ultima_atualizacao como 2026.
+
+db.contas.updateMany(
+    { status: "Ativa" },
+    {
+        $mul: {
+            saldo: 1.05
+        },
+        $set: {
+            ultima_atualizacao: 2026
+        }
+    }
+);
+
+
+// ============================================================
+// 6) UPDATE — $SET + $INC
+// ============================================================
+// ENUNCIADO:
+// Para produtos Eletrônicos com preço >= 1000, aumente estoque
+// em 10 e marque promocao como true.
+
+db.produtos.updateMany(
+    {
+        categoria: "Eletrônico",
+        preco: { $gte: 1000 }
+    },
+    {
+        $inc: { estoque: 10 },
+        $set: { promocao: true }
+    }
+);
+
+
+// ============================================================
+// 7) ARRAY — PULL + PUSH + EACH
+// ============================================================
+// ENUNCIADO:
+// No documento _id 505, remova a tag antigo e adicione
+// performance e json de uma só vez.
+
+db.postagens.updateOne(
+    { _id: 505 },
+    {
+        $pull: {
+            tags: "antigo"
+        },
+        $push: {
+            tags: {
+                $each: [
+                    "performance",
+                    "json"
+                ]
+            }
+        }
+    }
+);
+
+
+// ============================================================
+// 8) ARRAY — TROCAR UM INGREDIENTE POR DOIS
+// ============================================================
+// ENUNCIADO:
+// Remova carne do array ingredientes e adicione frango e queijo.
+
+db.produtos.updateOne(
+    { _id: 20 },
+    {
+        $pull: {
+            ingredientes: "carne"
+        },
+        $push: {
+            ingredientes: {
+                $each: [
+                    "frango",
+                    "queijo"
+                ]
+            }
+        }
+    }
+);
+
+
+// ============================================================
+// 9) ÍNDICE SIMPLES + LIMIT
+// ============================================================
+// ENUNCIADO:
+// Crie índice para nome do sócio e busque João limitando a 5.
+
+db.socios.createIndex({
+    nome: 1
+});
+
+db.socios.find({
+    nome: "João"
+}).limit(5);
+
+
+// ============================================================
+// 10) ÍNDICE COMPOSTO — ESR
+// ============================================================
+// ENUNCIADO:
+// A consulta é:
+// db.pacientes.find({ cidade: "Curitiba" })
+//   .sort({ ano_nascimento: -1 })
+// Crie o índice composto correto.
+//
+// cidade -> Equality
+// ano_nascimento -> Sort
+// ESR -> E antes de S.
+
+db.pacientes.createIndex({
+    cidade: 1,
+    ano_nascimento: -1
+});
+
+
+// ============================================================
+// 11) ÍNDICE — EQUALITY + SORT + RANGE
+// ============================================================
+// ENUNCIADO:
+// Consulta:
+// cidade = Curitiba
+// idade >= 18
+// sort por nome crescente
+//
+// ESR -> cidade(E), nome(S), idade(R)
+
+db.pessoas.createIndex({
+    cidade: 1,
+    nome: 1,
+    idade: 1
+});
+
+
+// ============================================================
+// 12) EXPLAIN — EXECUTIONSTATS
+// ============================================================
+// ENUNCIADO:
+// Verifique se o índice da consulta por cidade/ano está sendo usado.
+
+db.pacientes.find({
+    cidade: "Curitiba"
+}).sort({
+    ano_nascimento: -1
+}).explain("executionStats");
+
+// INTERPRETAÇÃO:
+// IXSCAN = índice usado.
+// COLLSCAN = varredura da coleção.
+// totalKeysExamined = chaves examinadas.
+// totalDocsExamined = documentos examinados.
+// nReturned = documentos retornados.
+// executionTimeMillis = tempo.
+
+
+// ============================================================
+// 13) EXPLAIN + HINT
+// ============================================================
+// ENUNCIADO:
+// Verifique a consulta usando o índice nome.
+
+db.socios.find({
+    nome: "João"
+})
+.hint({
+    nome: 1
+})
+.explain("executionStats");
+
+
+// ============================================================
+// 14) USUÁRIO READ
+// ============================================================
+// ENUNCIADO:
+// Crie cidadao no banco Receita com senha 1234 e apenas leitura.
+
+use Receita;
+
+db.createUser({
+    user: "cidadao",
+    pwd: "1234",
+    roles: [
+        {
+            role: "read",
+            db: "Receita"
+        }
+    ]
+});
+
+
+// ============================================================
+// 15) USUÁRIO READWRITE
+// ============================================================
+// ENUNCIADO:
+// Crie agente com senha abc123 e leitura/escrita.
+
+db.createUser({
+    user: "agente",
+    pwd: "abc123",
+    roles: [
+        {
+            role: "readWrite",
+            db: "Receita"
+        }
+    ]
+});
+
+
+// ============================================================
+// 16) ROLE PERSONALIZADA
+// ============================================================
+// ENUNCIADO:
+// Crie visualizadorSocios permitindo somente find na coleção socios.
+
+db.createRole({
+    role: "visualizadorSocios",
+    privileges: [
+        {
+            resource: {
+                db: "Receita",
+                collection: "socios"
+            },
+            actions: [
+                "find"
+            ]
+        }
+    ],
+    roles: []
+});
+
+
+// ============================================================
+// 17) DAR ROLE AO USUÁRIO
+// ============================================================
+// ENUNCIADO:
+// Dê visualizadorSocios ao usuário estagiario.
+
+db.grantRolesToUser(
+    "estagiario",
+    [
+        {
+            role: "visualizadorSocios",
+            db: "Receita"
+        }
+    ]
+);
+
+
+// ============================================================
+// 18) ROLE — COUNT
+// ============================================================
+// ENUNCIADO:
+// Permita que a role leitorApenasClientes execute count na coleção
+// clientes do banco Receita.
+//
+// grantPrivilegesToRole -> dar privilégio para a ROLE.
+// resource -> onde.
+// actions -> o que pode fazer.
+
+db.grantPrivilegesToRole(
+    "leitorApenasClientes",
+    [
+        {
+            resource: {
+                db: "Receita",
+                collection: "clientes"
+            },
+            actions: [
+                "count"
+            ]
+        }
+    ]
+);
+
+
+// ============================================================
+// 19) REVOGAR ROLE
+// ============================================================
+
+db.revokeRolesFromUser(
+    "estagiario",
+    [
+        {
+            role: "visualizadorSocios",
+            db: "Receita"
+        }
+    ]
+);
+
+
+// ============================================================
+// 20) REVOGAR PRIVILÉGIO
+// ============================================================
+
+db.revokePrivilegesFromRole(
+    "leitorApenasClientes",
+    [
+        {
+            resource: {
+                db: "Receita",
+                collection: "clientes"
+            },
+            actions: [
+                "find"
+            ]
+        }
+    ]
+);
+
+
+// ============================================================
+// 21) MODELAGEM RELACIONAL -> DOCUMENTO
+// ============================================================
+// ENUNCIADO:
+// Um cliente possui vários endereços. Modele em um documento
+// com array de subdocumentos para evitar a necessidade de JOIN.
+
+db.clientes.insertOne({
+    nome: "Ana Silva",
+    email: "ana@email.com",
+    enderecos: [
+        {
+            tipo: "Residencial",
+            rua: "Rua A",
+            numero: 123,
+            cidade: "Jau"
+        },
+        {
+            tipo: "Trabalho",
+            rua: "Rua B",
+            numero: 456,
+            cidade: "Sao Paulo"
+        }
+    ]
+});
+
+
+// ============================================================
+// 22) CONSULTA MISTA — IN + LIMIT
+// ============================================================
+// ENUNCIADO:
+// Busque produtos das categorias Eletrônico, Informática ou
+// Acessório e limite a 5.
+
+db.produtos.find({
+    categoria: {
+        $in: [
+            "Eletrônico",
+            "Informática",
+            "Acessório"
+        ]
+    }
+}).limit(5);
+
+
+// ============================================================
+// 23) UPDATE — MIN/MAX
+// ============================================================
+// Menor valor:
+db.produtos.updateOne(
+    { _id: 10 },
+    {
+        $min: {
+            preco: 100
+        }
+    }
+);
+
+// Maior valor:
+db.produtos.updateOne(
+    { _id: 10 },
+    {
+        $max: {
+            limite: 1000
+        }
+    }
+);
+
+
+// ============================================================
+// 24) UPDATE — SET / UNSET
+// ============================================================
+// Criar/alterar:
+db.produtos.updateOne(
+    { _id: 10 },
+    {
+        $set: {
+            disponivel: true
+        }
+    }
+);
+
+// Remover campo:
+db.produtos.updateOne(
+    { _id: 10 },
+    {
+        $unset: {
+            desconto: ""
+        }
+    }
+);
+
+
+// ============================================================
+// 25) CHECKLIST DE INTERPRETAÇÃO DO EXPLAIN
+// ============================================================
+// 1. Procure stage.
+// 2. IXSCAN = índice.
+// 3. COLLSCAN = coleção.
+// 4. Compare totalDocsExamined com nReturned.
+// 5. Veja totalKeysExamined.
+// 6. Veja executionTimeMillis.
+//
+// Exemplo bom:
+// nReturned: 5
+// totalDocsExamined: 5
+// totalKeysExamined: 5
+// stage: IXSCAN
+//
+// Exemplo ruim:
+// nReturned: 5
+// totalDocsExamined: 50000
+// totalKeysExamined: 0
+// stage: COLLSCAN
+// ============================================================
