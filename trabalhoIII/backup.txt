@@ -1,0 +1,9 @@
+mongodump --db concessionaria --out C:\Users\Supervisor\backup_concessionaria
+
+mongorestore C:\Users\Supervisor\backup_concessionaria
+
+
+mongodump --db concessionaria --collection carros --query "{\"marca\":\"Toyota\"}" --out C:\Users\Supervisor\backup_toyota --gzip
+
+
+mongorestore C:\Users\Supervisor\backup_toyota --gzip
